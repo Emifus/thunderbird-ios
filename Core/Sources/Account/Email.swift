@@ -129,6 +129,23 @@ extension Email {
     }
 }
 
+extension Email {
+    // A convenience function that converts an array of `EmailAddressProtocol` to an array of strings.
+    public func addressesStringArray(_ a: [EmailAddressProtocol]) -> [String] {
+        a.flatMap { $0.addresses.map { $0.value } }
+    }
+
+    // A convenience function that combines all of the addresses into a single comma separated string.
+    public func commaSeparatedAddresses(_ a: [EmailAddressProtocol]) -> String {
+        a.flatMap { $0.addresses.map { $0.value } }.joined(separator: ", ")
+    }
+
+    public var toStringArray: [String] { addressesStringArray(to) }
+    public var replyToStringArray: [String] { addressesStringArray(replyTo) }
+    public var ccStringArray: [String] { addressesStringArray(cc) }
+    public var bccStringArray: [String] { addressesStringArray(bcc) }
+}
+
 extension IMAP.Message {
 
     // Use `gmailMessageID` as ID string, if present
