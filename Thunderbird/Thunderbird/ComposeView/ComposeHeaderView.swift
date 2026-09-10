@@ -172,4 +172,3 @@ struct EmailPill: View {
     ComposeHeaderView()
         .environment(accountManager)
 }
-
