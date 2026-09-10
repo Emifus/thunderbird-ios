@@ -132,10 +132,9 @@ struct ReadEmailView: View {
                         }
                     }
                     ToolbarItem(placement: .bottom) {
-                        Button(action: {
-                            AlertManager.shared.showAlert = true
-                            AlertManager.shared.alertTitle = "Forward"
-                        }) {
+                        NavigationLink {
+                            ComposeView(email: email.asEmail())
+                        } label: {
                             Image(systemName: "arrowshape.turn.up.right")
                                 .foregroundStyle(.foreground)
                         }
