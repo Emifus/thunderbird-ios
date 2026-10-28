@@ -55,15 +55,15 @@
 "demo_button" = "Demo";
 
 //Headers
-"to_header" = "To";
-"from_header" = "From";
-"reply_to_header" = "Reply To";
-"sender_header" = "Sender";
-"cc_header" = "CC";
-"bcc_header" = "BCC";
+"to_header" = "To:";
+"from_header" = "From:";
+"reply_to_header" = "Reply To:";
+"sender_header" = "Sender:";
+"cc_header" = "CC:";
+"bcc_header" = "BCC:";
 "copy_header" = "Copy";
 "blind_copy_header" = "Blind Copy";
-"subject_header" = "Subject";
+"subject_header" = "Subject:";
 
 
 // Other

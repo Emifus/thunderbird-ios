@@ -19,6 +19,12 @@ struct ComposeHeaderView: View {
     @State private var showCCBCC: Bool = false
     @State private var showReplyTo: Bool = false
 
+    var ccBccString: String {
+        let ccString = (ccRecipients.count > 0) ? "Cc: \(ccRecipients.count)" : "Cc"
+        let bccString = (bccRecipients.count > 0) ? "Bcc \(bccRecipients.count)" : "Bcc"
+        return "\(ccString)/\(bccString)"
+    }
+
     func populateFromEmail(_ email: Email?) {
         guard let email else { return }
 
@@ -30,67 +36,98 @@ struct ComposeHeaderView: View {
         bccRecipients = email.bccStringArray
     }
 
-    var body: some View {
-        VStack {
-            Group {
-                HStack {
-                    Picker("from_header", selection: $selectedSender) {
-                        ForEach(accountManager.allAccounts) { account in
-                            Text(account.name).tag(account.id)
-                        }
-                    } currentValueLabel: {
-                        Text(accountManager.account(for: selectedSender)?.name ?? "")
-                    }
-                    .pickerStyle(.menu)
+    var fromField: some View {
+        HStack {
+            Text("from_header")
+                .fontWeight(.semibold)
+                .foregroundStyle(.gray)
 
-                    Spacer()
+            Menu(accountManager.account(for: selectedSender)?.name ?? "select an account") {
+                ForEach(accountManager.allAccounts) { account in
+                    Button {
+                        selectedSender = account.id
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark")
+                                .tint(selectedSender == account.id ? .blue : .clear)
 
-                    VStack {
-                        if !showReplyTo {
-                            Spacer()
-                            Button("", systemImage: "chevron.down") {
-                                showReplyTo = true
-                            }
-                            .foregroundStyle(.black)
-                            Spacer()
-                        }
-                    }
-                }
-
-                if showReplyTo {
-                    MultiAddressBar("reply_to_header", $replyToRecipients)
-                }
-
-                HStack(alignment: .top) {
-                    MultiAddressBar("to_header", $toRecipients)
-                    if !showCCBCC {
-                        VStack {
-                            Spacer()
-                            Button("", systemImage: "chevron.down") {
-                                showCCBCC = true
-                            }
-                            .foregroundStyle(.black)
-                            Spacer()
+                            Text(account.name)
                         }
                     }
                 }
             }
-            .padding(.bottom, 4)
+
+            Spacer()
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Group {
+                HStack {
+                    fromField
+
+                    Spacer()
+
+                    // TODO: HOW WOULD DESIGN LIKE TO HANDLE THE SHOW/HIDE NATURE OF THIS FIELD?
+                    Button("", systemImage: (showReplyTo ? "chevron.up" : "chevron.down")) {
+                        withAnimation {
+                            showReplyTo.toggle()
+                        }
+                    }
+                    .foregroundStyle(.black)
+                }
+
+                if showReplyTo {
+                    Divider()
+                    MultiAddressBar("reply_to_header", $replyToRecipients)
+                }
+
+                Divider()
+
+                HStack {
+                    MultiAddressBar("to_header", $toRecipients)
+
+                    Button {
+                        withAnimation {
+                            showCCBCC.toggle()
+                        }
+                    } label: {
+                        Text(ccBccString)
+                            .padding(4)
+                            .padding(.horizontal, 12)
+                    }
+                    .overlay(
+                        Capsule()
+                            .stroke(lineWidth: 1)
+                            .foregroundStyle(.blue)
+                    )
+                }
+            }
 
             if showCCBCC {
+                Divider()
                 MultiAddressBar("cc_header", $ccRecipients)
+                Divider()
                 MultiAddressBar("bcc_header", $bccRecipients)
             }
 
             Divider()
 
-            TextField("subject_header", text: $subject)
-                .font(.subheadline)
-                .padding()
-                .background(.gray, in: RoundedRectangle(cornerRadius: 24))
+            HStack {
+                Text("subject_header")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.gray)
+                TextField("", text: $subject, axis: .vertical)
+                    .font(.subheadline)
+                    .lineLimit(1...3)
+            }
+
+            Divider()
         }
         .padding()
         .onAppear {
+            selectedSender = accountManager.allAccounts.first?.id ?? UUID()
             populateFromEmail(email)
         }
     }
@@ -109,12 +146,14 @@ struct MultiAddressBar: View {
     @Binding private var entryText: [String]
     @State private var entryString: String = ""
 
-    // MARK: View
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 Text(headerText)
                     .fixedSize()
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.gray)
+
                 TextField("", text: $entryString)
                     .textFieldStyle(.automatic)
                     #if os(iOS)
@@ -124,19 +163,20 @@ struct MultiAddressBar: View {
                     .focusable()
                     .onSubmit {
                         if entryString.isEmailAddress {
-                            entryText.append(entryString)
-                            entryString = ""
+                            withAnimation {
+                                entryText.append(entryString)
+                                entryString = ""
+                            }
                         }
                     }
             }
+
             HStackWrap {
                 ForEach(entryText, id: \.self) { email in
                     EmailPill(email, $entryText)
                 }
             }
         }
-        .padding()
-        .background(.gray, in: RoundedRectangle(cornerRadius: 24))
     }
 }
 
@@ -152,17 +192,31 @@ struct EmailPill: View {
     var body: some View {
         HStack {
             Text(emailAddress)
-                .fixedSize(horizontal: true, vertical: false)
-            Label("remove_button", systemImage: "x.circle").labelStyle(.iconOnly)
+                .foregroundStyle(.blue)
                 .onTapGesture {
-                    entries.remove(at: entries.firstIndex(of: emailAddress)!)
+                    withAnimation {
+                        let entry = entries.remove(at: entries.firstIndex(of: emailAddress)!)
+
+                    }
                 }
-        }.padding(2)
-            .background {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(.gray.opacity(0.2))
-                    .stroke(.gray, lineWidth: 1)
-            }
+
+            // TODO: CAN WE DROP THIS BUTTON WITH DESIGN APPROVAL?
+            Label("remove_button", systemImage: "x.circle")
+                .foregroundStyle(.blue)
+                .labelStyle(.iconOnly)
+                .onTapGesture {
+                    withAnimation {
+                        _ = entries.remove(at: entries.firstIndex(of: emailAddress)!)
+                    }
+                }
+        }
+        .padding(4)
+        .padding(.horizontal, 8)
+        .background(
+            Capsule()
+//                .stroke(lineWidth: 1)
+                .foregroundStyle(.gray)
+        )
     }
 }
 
